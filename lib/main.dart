@@ -993,17 +993,16 @@ class WheelPainter extends CustomPainter {
 
   Color _getColorForIndex(int index) {
     final colors = [
-      Colors.deepPurpleAccent,
-      Colors.amberAccent,
-      Colors.pinkAccent,
-      Colors.blueAccent,
-      Colors.greenAccent,
-      Colors.orangeAccent,
-      Colors.cyanAccent,
-      Colors.purpleAccent,
-      Colors.lightGreenAccent,
+      const Color(0xFF6D28D9), // Фиолет глубокий
+      const Color(0xFF0891B2), // Голубой яркий
+      const Color(0xFFD946EF), // Розовый магента
+      const Color(0xFFF59E0B), // Оранжевый золотой
+      const Color(0xFF3B82F6), // Синий яркий
+      const Color(0xFF8B5CF6), // Фиолет светлый
+      const Color(0xFF14B8A6), // Бирюзовый
+      const Color(0xFFF97316), // Оранжевый яркий
     ];
-    return colors[index % colors.length].withOpacity(0.85);
+    return colors[index % colors.length].withOpacity(0.9);
   }
 }
 
