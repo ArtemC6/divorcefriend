@@ -1,11 +1,14 @@
-import 'dart:convert';
 import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-void main() {
+void main() async {
+  await Hive.initFlutter();
+  Hive.registerAdapter(ItemAdapter());
+  await Hive.openBox<Item>('wheel_items');
   runApp(const MyApp());
 }
 
@@ -48,6 +51,31 @@ class MyApp extends StatelessWidget {
   }
 }
 
+class Item {
+  String text;
+  double weight;
+
+  Item(this.text, [this.weight = 1.0]);
+}
+
+class ItemAdapter extends TypeAdapter<Item> {
+  @override
+  final int typeId = 0;
+
+  @override
+  Item read(BinaryReader reader) {
+    final text = reader.readString();
+    final weight = reader.readDouble();
+    return Item(text, weight);
+  }
+
+  @override
+  void write(BinaryWriter writer, Item obj) {
+    writer.writeString(obj.text);
+    writer.writeDouble(obj.weight);
+  }
+}
+
 class RandomizerScreen extends StatefulWidget {
   const RandomizerScreen({super.key});
 
@@ -57,10 +85,12 @@ class RandomizerScreen extends StatefulWidget {
 
 class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerProviderStateMixin {
   final TextEditingController _textController = TextEditingController();
+  final TextEditingController _weightController = TextEditingController();
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
-  List<String> _items = [];
+  List<Item> _items = [];
   String _selectedItem = '';
   late AnimationController _animationController;
+  late Animation<double> _spinAnimation;
   double _rotationAngle = 0.0;
   final Random _random = Random();
   bool _showResult = false;
@@ -71,14 +101,20 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3200),
+      duration: const Duration(milliseconds: 5000),
     );
-    _animationController.addListener(() {
+
+    _spinAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const _DecelerationCurve(),
+      ),
+    )..addListener(() {
       setState(() {
-        final t = Curves.easeInOut.transform(_animationController.value);
-        _rotationAngle = t * 2 * pi * 5 + (Curves.elasticOut.transform(_animationController.value) * 0.1);
+        _rotationAngle = _spinAnimation.value * 2 * pi * (_random.nextInt(5) + 5);
       });
     });
+
     _animationController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         _selectRandomItem();
@@ -93,34 +129,38 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
   @override
   void dispose() {
     _textController.dispose();
+    _weightController.dispose();
     _animationController.dispose();
     super.dispose();
   }
 
   Future<void> _loadItems() async {
-    final prefs = await SharedPreferences.getInstance();
-    final itemsJson = prefs.getString('wheel_items');
-    if (itemsJson != null) {
-      setState(() {
-        _items = List<String>.from(json.decode(itemsJson));
-      });
-    }
+    final box = Hive.box<Item>('wheel_items');
+    setState(() {
+      _items = box.values.toList();
+    });
   }
 
   Future<void> _saveItems() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('wheel_items', json.encode(_items));
+    final box = Hive.box<Item>('wheel_items');
+    await box.clear();
+    for (int i = 0; i < _items.length; i++) {
+      await box.putAt(i, _items[i]);
+    }
   }
 
   void _addItem() {
     if (_textController.text.trim().isNotEmpty) {
-      final newItem = _textController.text.trim();
+      final newItem = Item(
+        _textController.text.trim(),
+        double.tryParse(_weightController.text) ?? 1.0,
+      );
       setState(() {
         _items.add(newItem);
         _textController.clear();
+        _weightController.clear();
         _saveItems();
       });
-      // Ensure the AnimatedList is updated after the setState
       Future.microtask(() {
         _listKey.currentState?.insertItem(_items.length - 1, duration: const Duration(milliseconds: 500));
       });
@@ -128,7 +168,8 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
   }
 
   void _editItem(int index) {
-    _textController.text = _items[index];
+    _textController.text = _items[index].text;
+    _weightController.text = _items[index].weight.toString();
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -147,30 +188,53 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
               filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
               child: AlertDialog(
                 title: const Text('Редактировать элемент', style: TextStyle(color: Colors.white)),
-                content: TextField(
-                  controller: _textController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
-                    labelText: 'Новое значение',
-                    labelStyle: TextStyle(color: Colors.grey),
-                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.deepPurpleAccent)),
-                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.tealAccent)),
-                  ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: _textController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        labelText: 'Название',
+                        labelStyle: TextStyle(color: Colors.grey),
+                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.deepPurpleAccent)),
+                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.tealAccent)),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    TextField(
+                      controller: _weightController,
+                      style: const TextStyle(color: Colors.white),
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        labelText: 'Вес (1.0 и выше)',
+                        labelStyle: TextStyle(color: Colors.grey),
+                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.deepPurpleAccent)),
+                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.tealAccent)),
+                      ),
+                    ),
+                  ],
                 ),
                 actions: [
                   TextButton(
                     onPressed: () {
                       Navigator.pop(context);
                       _textController.clear();
+                      _weightController.clear();
                     },
                     child: const Text('Отмена', style: TextStyle(color: Colors.deepPurpleAccent)),
                   ),
                   TextButton(
                     onPressed: () {
                       setState(() {
-                        _items[index] = _textController.text.trim();
+                        _items[index] = Item(
+                          _textController.text.trim(),
+                          double.tryParse(_weightController.text) ?? 1.0,
+                        );
                         _textController.clear();
+                        _weightController.clear();
                         _saveItems();
                       });
                       Navigator.pop(context);
@@ -209,9 +273,8 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
       _selectedItem = '';
       _showResult = false;
       _isSpinning = true;
+      _animationController.duration = Duration(milliseconds: 4000 + _random.nextInt(2000));
       _animationController.reset();
-      // Добавляем случайное смещение для более естественного вращения
-      _rotationAngle = _random.nextDouble() * 2 * pi;
       _animationController.forward();
     });
   }
@@ -219,12 +282,26 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
   void _selectRandomItem() {
     if (_items.isEmpty) return;
 
+    // Weighted random selection
+    double totalWeight = _items.fold(0, (sum, item) => sum + max(1.0, item.weight));
+    double randomValue = _random.nextDouble() * totalWeight;
+    double currentWeight = 0;
+    int selectedIndex = 0;
+
+    for (int i = 0; i < _items.length; i++) {
+      currentWeight += max(1.0, _items[i].weight);
+      if (randomValue <= currentWeight) {
+        selectedIndex = i;
+        break;
+      }
+    }
+
+    // Adjust final rotation to point to selected item
+    final sweepAngle = 2 * pi / _items.length;
+    final targetAngle = (selectedIndex * sweepAngle - pi / 2) % (2 * pi);
     setState(() {
-      // Рассчитываем индекс с учетом текущего угла поворота
-      final normalizedAngle = _rotationAngle % (2 * pi);
-      final sectorAngle = 2 * pi / _items.length;
-      int selectedIndex = _items.length - 1 - (normalizedAngle / sectorAngle).floor() % _items.length;
-      _selectedItem = _items[selectedIndex];
+      _rotationAngle = (_rotationAngle ~/ (2 * pi)) * 2 * pi + targetAngle;
+      _selectedItem = _items[selectedIndex].text;
       _showResult = true;
     });
 
@@ -253,7 +330,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
     });
   }
 
-  Widget _buildAnimatedListItem(String item, int index, Animation<double> animation) {
+  Widget _buildAnimatedListItem(Item item, int index, Animation<double> animation) {
     return Padding(
       padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
       child: FadeTransition(
@@ -278,7 +355,8 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
                     boxShadow: [BoxShadow(color: Colors.white.withOpacity(0.07), blurRadius: 8, offset: const Offset(0, 2))],
                   ),
                   child: ListTile(
-                    title: Text(item, style: const TextStyle(color: Colors.white)),
+                    title: Text('${item.text} (вес: ${item.weight.toStringAsFixed(1)})',
+                        style: const TextStyle(color: Colors.white)),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -306,7 +384,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
-    final wheelSize = size.width * 0.8; // Адаптивный размер колеса
+    final wheelSize = size.width * 0.8;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -331,17 +409,68 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
           ),
         ),
         child: SafeArea(
-          bottom: !isKeyboardVisible, // Отключаем bottom SafeArea при открытой клавиатуре
+          bottom: !isKeyboardVisible,
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             child: Padding(
               padding: EdgeInsets.all(size.width * 0.04),
               child: Column(
                 children: [
-                  // Поле ввода
                   Row(
                     children: [
                       Expanded(
+                        flex: 2,
+                        child: Container(
+                          height: size.height * 0.074,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.deepPurpleAccent.withOpacity(0.2),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 400),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(14),
+                              color: Colors.black.withOpacity(0.2),
+                              border: Border.all(color: Colors.white.withOpacity(0.3)),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(14),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 22.0, sigmaY: 32.0),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(1.0),
+                                  child: TextField(
+                                    controller: _textController,
+                                    style: TextStyle(color: Colors.white, fontSize: size.width * 0.04),
+                                    decoration: InputDecoration(
+                                      contentPadding: EdgeInsets.symmetric(
+                                        vertical: size.height * 0.02,
+                                        horizontal: size.width * 0.04,
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.transparent,
+                                      border: InputBorder.none,
+                                      labelText: 'Введите элемент',
+                                      labelStyle: TextStyle(color: Colors.grey[400]),
+                                    ),
+                                    onChanged: (_) => setState(() {}),
+                                    onSubmitted: (_) => _addItem(),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: size.width * 0.02),
+                      Expanded(
+                        flex: 1,
                         child: Container(
                           height: size.height * 0.074,
                           decoration: BoxDecoration(
@@ -368,8 +497,29 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
                                 child: Padding(
                                   padding: const EdgeInsets.all(1.0),
                                   child: TextField(
-                                    controller: _textController,
+                                    controller: _weightController,
                                     style: TextStyle(color: Colors.white, fontSize: size.width * 0.04),
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                                      TextInputFormatter.withFunction((oldValue, newValue) {
+                                        final oldText = oldValue.text;
+                                        final newText = newValue.text;
+                                        if (newText == '') return newValue;
+                                        if (newText == ',') return newValue.copyWith(text: '.');
+                                        if (newText == '.') return newValue;
+                                        if (newText.startsWith(',') || newText.startsWith('.') || newText.startsWith(RegExp(r'[^\d.,]'))) return oldValue;
+                                        if (newText.split(RegExp(r'[,.]')).length > 2) return oldValue;
+
+                                        if (newText.contains(RegExp(r'[,.]'))) {
+                                          final split = newText.split(RegExp(r'[,.]'));
+                                          if (split[1].length > 2) return oldValue;
+                                        }
+
+                                        if (newText != '' && double.tryParse(newText.replaceAll(',', '.')) == null) return oldValue;
+
+                                        return newValue;
+                                      }),
+                                    ],
                                     decoration: InputDecoration(
                                       contentPadding: EdgeInsets.symmetric(
                                         vertical: size.height * 0.02,
@@ -378,10 +528,11 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
                                       filled: true,
                                       fillColor: Colors.transparent,
                                       border: InputBorder.none,
-                                      labelText: 'Введите элемент',
+                                      labelText: 'Вес',
                                       labelStyle: TextStyle(color: Colors.grey[400]),
                                       suffixIcon: AnimatedScale(
-                                        scale: _textController.text.trim().isNotEmpty ? 1.1 : 1.0,
+                                        scale: _textController.text.trim().isNotEmpty &&
+                                            _weightController.text.trim().isNotEmpty ? 1.1 : 1.0,
                                         duration: const Duration(milliseconds: 200),
                                         child: IconButton(
                                           icon: const Icon(Icons.add, color: Colors.white),
@@ -392,17 +543,15 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
                                     onChanged: (_) => setState(() {}),
                                     onSubmitted: (_) => _addItem(),
                                   ),
-                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
+                      ),
                     ],
                   ),
                   SizedBox(height: size.height * 0.035),
-
-                  // Колесо
                   SizedBox(
                     height: wheelSize * 1.2,
                     child: Center(
@@ -411,6 +560,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
+
                             AnimatedContainer(
                               duration: const Duration(milliseconds: 600),
                               curve: Curves.easeInOut,
@@ -424,6 +574,8 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
                                 ),
                               ),
                             ),
+                            if(!_selectedItem.isNotEmpty)
+
                             AnimatedBuilder(
                               animation: _animationController,
                               builder: (context, child) {
@@ -484,10 +636,6 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
                       ),
                     ),
                   ),
-
-
-                  // Результат
-// Результат
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 800),
                     transitionBuilder: (Widget child, Animation<double> animation) {
@@ -549,13 +697,12 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
                     )
                         : const SizedBox.shrink(),
                   ),
-                  // Список элементов
                   SizedBox(
                     height: size.height * (isKeyboardVisible ? 0.2 : 0.3),
                     child: _items.isEmpty
                         ? Center(
                       child: Text(
-                        textAlign:  TextAlign.center,
+                        textAlign: TextAlign.center,
                         'Добавьте элементы для рандомизации',
                         style: TextStyle(
                           color: Colors.white,
@@ -582,7 +729,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
 }
 
 class WheelPainter extends CustomPainter {
-  final List<String> items;
+  final List<Item> items;
 
   WheelPainter({required this.items});
 
@@ -591,6 +738,7 @@ class WheelPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
     final paint = Paint()..style = PaintingStyle.fill;
+    final totalWeight = items.fold(0.0, (sum, item) => sum + max(1.0, item.weight));
 
     if (items.isEmpty) {
       paint.color = const Color(0xFF2D2D2D);
@@ -598,11 +746,9 @@ class WheelPainter extends CustomPainter {
       return;
     }
 
-    final sweepAngle = 2 * pi / items.length;
-
-    // Рисуем сектора в обратном порядке, чтобы первый элемент был сверху
+    double startAngle = -pi / 2;
     for (int i = 0; i < items.length; i++) {
-      final startAngle = i * sweepAngle - pi / 2; // Смещаем на -90 градусов, чтобы первый элемент был сверху
+      final sweepAngle = (2 * pi * max(1.0, items[i].weight)) / totalWeight;
       paint.color = _getColorForIndex(i);
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
@@ -611,9 +757,7 @@ class WheelPainter extends CustomPainter {
         true,
         paint,
       );
-      // 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
 
-      // Разделительные линии между секторами
       final linePaint = Paint()
         ..color = Colors.white.withOpacity(0.12)
         ..strokeWidth = 2
@@ -627,10 +771,9 @@ class WheelPainter extends CustomPainter {
         linePaint,
       );
 
-      // Текст элемента
       final textPainter = TextPainter(
         text: TextSpan(
-          text: items[i],
+          text: items[i].text,
           style: TextStyle(
             color: Colors.white,
             fontSize: max(12, size.width * 0.05),
@@ -648,26 +791,25 @@ class WheelPainter extends CustomPainter {
 
       canvas.save();
       canvas.translate(textX, textY);
-      canvas.rotate(textAngle + pi / 2); // Поворачиваем текст для правильной ориентации
+      canvas.rotate(textAngle + pi / 2);
       textPainter.paint(
         canvas,
         Offset(-textPainter.width / 2, -textPainter.height / 2),
       );
       canvas.restore();
+
+      startAngle += sweepAngle;
     }
 
-    // Центральный круг
     paint.color = const Color(0xFF1E1E1E);
     canvas.drawCircle(center, radius * 0.1, paint);
 
-    // Внешняя граница колеса
     final borderPaint = Paint()
       ..color = Colors.tealAccent
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4;
     canvas.drawCircle(center, radius, borderPaint);
 
-    // Свечение вокруг колеса
     final glowPaint = Paint()
       ..color = Colors.tealAccent.withOpacity(0.18)
       ..style = PaintingStyle.stroke
@@ -691,5 +833,14 @@ class WheelPainter extends CustomPainter {
       Colors.lightGreenAccent,
     ];
     return colors[index % colors.length].withOpacity(0.85);
+  }
+}
+
+class _DecelerationCurve extends Curve {
+  const _DecelerationCurve();
+
+  @override
+  double transformInternal(double t) {
+    return 1 - pow(1 - t, 4).toDouble();
   }
 }
