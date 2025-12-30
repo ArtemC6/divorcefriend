@@ -5,6 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+void vibrate(int duration) {
+  HapticFeedback.vibrate();
+  Future.delayed(Duration(milliseconds: duration ~/ 3), () {
+    HapticFeedback.vibrate();
+  });
+}
+
 void main() async {
   await Hive.initFlutter();
   Hive.registerAdapter(ItemAdapter());
@@ -83,11 +90,12 @@ class RandomizerScreen extends StatefulWidget {
   State<RandomizerScreen> createState() => _RandomizerScreenState();
 }
 
-class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerProviderStateMixin {
+class _RandomizerScreenState extends State<RandomizerScreen> with TickerProviderStateMixin {
   final TextEditingController _textController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   List<Item> _items = [];
+  List<String> _history = [];
   String _selectedItem = '';
   late AnimationController _animationController;
   late Animation<double> _spinAnimation;
@@ -95,6 +103,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
   final Random _random = Random();
   bool _showResult = false;
   bool _isSpinning = false;
+  late AnimationController _glowController;
 
   @override
   void initState() {
@@ -103,6 +112,11 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
       vsync: this,
       duration: const Duration(milliseconds: 5000),
     );
+
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
 
     _spinAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
@@ -131,6 +145,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
     _textController.dispose();
     _weightController.dispose();
     _animationController.dispose();
+    _glowController.dispose();
     super.dispose();
   }
 
@@ -269,6 +284,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
 
   void _spinWheel() {
     if (_items.isEmpty || _isSpinning) return;
+    vibrate(200);
     setState(() {
       _selectedItem = '';
       _showResult = false;
@@ -303,7 +319,11 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
       _rotationAngle = (_rotationAngle ~/ (2 * pi)) * 2 * pi + targetAngle;
       _selectedItem = _items[selectedIndex].text;
       _showResult = true;
+      _history.insert(0, _selectedItem);
+      if (_history.length > 5) _history.removeLast();
     });
+
+    vibrate(300);
 
     Future.delayed(const Duration(milliseconds: 500), () {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -339,36 +359,79 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
           position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(
             CurvedAnimation(parent: animation, curve: Curves.easeOut),
           ),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: Colors.transparent,
+          child: Dismissible(
+            key: ValueKey(index),
+            background: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [Colors.red.withOpacity(0.7), Colors.red.withOpacity(0.4)],
+                ),
+              ),
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              child: const Icon(Icons.delete, color: Colors.white),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.9)),
-                    boxShadow: [BoxShadow(color: Colors.white.withOpacity(0.07), blurRadius: 8, offset: const Offset(0, 2))],
-                  ),
-                  child: ListTile(
-                    title: Text('${item.text} (вес: ${item.weight.toStringAsFixed(1)})',
-                        style: const TextStyle(color: Colors.white)),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.edit, color: Colors.white),
-                          onPressed: () => _editItem(index),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.white),
-                          onPressed: () => _deleteItem(index),
-                        ),
+            onDismissed: (_) => _deleteItem(index),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.transparent,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.white.withOpacity(0.15),
+                          Colors.white.withOpacity(0.05),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      border: Border.all(color: Colors.white.withOpacity(0.9)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.white.withOpacity(0.07),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        )
                       ],
+                    ),
+                    child: ListTile(
+                      title: Text(
+                        '${item.text} (вес: ${item.weight.toStringAsFixed(1)})',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+                      ),
+                      trailing: PopupMenuButton(
+                        icon: const Icon(Icons.more_vert, color: Colors.white),
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            child: Row(
+                              children: const [
+                                Icon(Icons.edit, color: Colors.deepPurpleAccent),
+                                SizedBox(width: 10),
+                                Text('Редактировать'),
+                              ],
+                            ),
+                            onTap: () => _editItem(index),
+                          ),
+                          PopupMenuItem(
+                            child: Row(
+                              children: const [
+                                Icon(Icons.delete, color: Colors.red),
+                                SizedBox(width: 10),
+                                Text('Удалить'),
+                              ],
+                            ),
+                            onTap: () => _deleteItem(index),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -389,13 +452,29 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(
-          'Разведи друга',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: size.width * 0.06,
-            fontWeight: FontWeight.bold,
-          ),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [Colors.deepPurpleAccent, Colors.tealAccent],
+                ),
+              ),
+              child: const Icon(Icons.casino, color: Colors.white, size: 28),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Разведи друга',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: size.width * 0.06,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -560,7 +639,27 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-
+                            AnimatedBuilder(
+                              animation: _glowController,
+                              builder: (context, child) {
+                                return Container(
+                                  width: _isSpinning ? wheelSize * 1.2 : wheelSize * 1.05,
+                                  height: _isSpinning ? wheelSize * 1.2 : wheelSize * 1.05,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.tealAccent.withOpacity(
+                                          _isSpinning ? 0.4 * (0.5 + 0.5 * sin(_glowController.value * 2 * pi)) : 0.1,
+                                        ),
+                                        blurRadius: _isSpinning ? 40 : 20,
+                                        spreadRadius: _isSpinning ? 15 : 5,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
                             AnimatedContainer(
                               duration: const Duration(milliseconds: 600),
                               curve: Curves.easeInOut,
@@ -697,8 +796,58 @@ class _RandomizerScreenState extends State<RandomizerScreen> with SingleTickerPr
                     )
                         : const SizedBox.shrink(),
                   ),
+                  if (_history.isNotEmpty)
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: size.height * 0.015),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'История',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: size.width * 0.04,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: size.height * 0.01),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _history.map((item) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.deepPurpleAccent.withOpacity(0.6),
+                                      Colors.tealAccent.withOpacity(0.6),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.2),
+                                  ),
+                                ),
+                                child: Text(
+                                  item,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                    ),
                   SizedBox(
-                    height: size.height * (isKeyboardVisible ? 0.2 : 0.3),
+                    height: size.height * (isKeyboardVisible ? 0.2 : 0.25),
                     child: _items.isEmpty
                         ? Center(
                       child: Text(
