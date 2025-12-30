@@ -279,6 +279,10 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
       if (_selectedItem.isNotEmpty && _items.isEmpty) {
         _selectedItem = '';
       }
+      // Очищаем историю когда удалены все элементы
+      if (_items.isEmpty) {
+        _history.clear();
+      }
     });
   }
 
@@ -815,29 +819,47 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                             spacing: 8,
                             runSpacing: 8,
                             children: _history.map((item) {
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.deepPurpleAccent.withOpacity(0.6),
-                                      Colors.tealAccent.withOpacity(0.6),
-                                    ],
+                              return GestureDetector(
+                                onLongPress: () {
+                                  setState(() {
+                                    _history.remove(item);
+                                  });
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Удалено: $item'),
+                                      duration: const Duration(seconds: 2),
+                                      backgroundColor: Colors.red.withOpacity(0.7),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
                                   ),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.2),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.deepPurpleAccent.withOpacity(0.6),
+                                        Colors.tealAccent.withOpacity(0.6),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.2),
+                                    ),
                                   ),
-                                ),
-                                child: Text(
-                                  item,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
+                                  child: Text(
+                                    item,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ),
                               );
