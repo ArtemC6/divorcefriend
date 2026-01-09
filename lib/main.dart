@@ -656,15 +656,149 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                             AnimatedBuilder(
                               animation: _animationController,
                               builder: (context, child) {
-                                return SizedBox(
-                                  width: wheelSize,
-                                  height: wheelSize,
-                                  child: _MagicCounterSelector(
-                                    items: _items,
-                                    animationValue: _animationController.value,
-                                    size: wheelSize,
-                                    onTap: _spinWheel,
-                                  ),
+                                final animValue = _animationController.value;
+                                return Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    // Светящийся фон
+                                    Container(
+                                      width: wheelSize * 1.6,
+                                      height: wheelSize * 1.6,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: RadialGradient(
+                                          colors: [
+                                            Colors.purpleAccent.withOpacity((0.15 + 0.1 * sin(animValue * 2 * pi)).clamp(0.0, 1.0)),
+                                            Colors.cyanAccent.withOpacity((0.1 + 0.05 * sin(animValue * 2 * pi + pi)).clamp(0.0, 1.0)),
+                                            Colors.transparent,
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    // Радиальные лучи
+                                    ...List.generate(12, (rayIndex) {
+                                      final angle = (rayIndex / 12) * 2 * pi;
+                                      final rayLength = wheelSize * (0.8 + 0.2 * sin(animValue * 3 * pi + rayIndex));
+                                      final dx = cos(angle) * rayLength;
+                                      final dy = sin(angle) * rayLength;
+                                      final opacity = 0.2 + 0.2 * sin(animValue * 4 * pi + rayIndex);
+
+                                      return Transform.translate(
+                                        offset: Offset(dx, dy),
+                                        child: Container(
+                                          width: wheelSize * 0.015,
+                                          height: wheelSize * 0.08,
+                                          decoration: BoxDecoration(
+                                            color: Colors.cyanAccent.withOpacity(opacity.clamp(0.0, 1.0)),
+                                            borderRadius: BorderRadius.circular(wheelSize * 0.01),
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                    // Внешние пульсирующие кольца
+                                    ...List.generate(3, (ringIndex) {
+                                      final ringSize = wheelSize * (1.3 + ringIndex * 0.15);
+                                      final opacity = (0.3 - ringIndex * 0.1) * (0.5 + 0.5 * sin(animValue * 4 * pi + ringIndex));
+                                      return Container(
+                                        width: ringSize,
+                                        height: ringSize,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.cyanAccent.withOpacity(opacity.clamp(0.0, 1.0)),
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                    // Летающие звёзды вокруг счётчика
+                                    ...List.generate(6, (i) {
+                                      final angle = (i / 6) * 2 * pi + animValue * 3 * pi;
+                                      final radius = wheelSize * 0.65;
+                                      final dx = cos(angle) * radius;
+                                      final dy = sin(angle) * radius;
+                                      final opacity = 0.4 + 0.4 * sin(animValue * 6 * pi + i);
+                                      final scale = 0.5 + 0.3 * sin(animValue * 5 * pi + i);
+
+                                      return Transform.translate(
+                                        offset: Offset(dx, dy),
+                                        child: Transform.scale(
+                                          scale: scale,
+                                          child: Icon(
+                                            Icons.star,
+                                            color: Colors.purpleAccent.withOpacity(opacity.clamp(0.0, 1.0)),
+                                            size: wheelSize * 0.08,
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                    // Мелкие пульсирующие частицы
+                                    ...List.generate(8, (i) {
+                                      final angle = (i / 8) * 2 * pi + animValue * 2 * pi;
+                                      final radius = wheelSize * 0.5 + sin(animValue * 3 * pi + i) * wheelSize * 0.1;
+                                      final dx = cos(angle) * radius;
+                                      final dy = sin(angle) * radius;
+                                      final opacity = 0.3 + 0.3 * sin(animValue * 5 * pi + i);
+                                      final size = wheelSize * (0.02 + 0.01 * sin(animValue * 4 * pi + i));
+
+                                      return Transform.translate(
+                                        offset: Offset(dx, dy),
+                                        child: Container(
+                                          width: size,
+                                          height: size,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Colors.cyanAccent.withOpacity(opacity.clamp(0.0, 1.0)),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.cyanAccent.withOpacity((opacity * 0.5).clamp(0.0, 1.0)),
+                                                blurRadius: wheelSize * 0.02,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                    // Случайные мигающие цифры вокруг счётчика
+                                    ...List.generate(16, (i) {
+                                      final angle = (i / 16) * 2 * pi + animValue * 1.5 * pi;
+                                      final radius = wheelSize * (0.4 + 0.3 * sin(animValue * 2 * pi + i * 0.5));
+                                      final dx = cos(angle) * radius;
+                                      final dy = sin(angle) * radius;
+                                      final opacity = 0.2 + 0.3 * sin(animValue * 7 * pi + i * 0.7);
+                                      final itemCount = _items.isEmpty ? 1 : _items.length;
+                                      final digitValue = ((animValue * 2000 + i * 150).toInt() % itemCount) + 1;
+
+                                      return Transform.translate(
+                                        offset: Offset(dx, dy),
+                                        child: Text(
+                                          '$digitValue',
+                                          style: TextStyle(
+                                            color: Colors.purpleAccent.withOpacity(opacity.clamp(0.0, 1.0)),
+                                            fontSize: wheelSize * 0.06,
+                                            fontWeight: FontWeight.bold,
+                                            shadows: [
+                                              Shadow(
+                                                color: Colors.purpleAccent.withOpacity((opacity * 0.5).clamp(0.0, 1.0)),
+                                                blurRadius: wheelSize * 0.03,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                    // Основной счётчик
+                                    SizedBox(
+                                      width: wheelSize,
+                                      height: wheelSize,
+                                      child: _MagicCounterSelector(
+                                        items: _items,
+                                        animationValue: animValue,
+                                        size: wheelSize,
+                                        onTap: _spinWheel,
+                                      ),
+                                    ),
+                                  ],
                                 );
                               },
                             ),
