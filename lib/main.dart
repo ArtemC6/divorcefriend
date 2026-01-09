@@ -214,7 +214,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                         labelText: 'Название',
                         labelStyle: TextStyle(color: Colors.grey),
                         enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.deepPurpleAccent)),
-                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.tealAccent)),
+                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.cyanAccent)),
                       ),
                     ),
                     SizedBox(height: 16),
@@ -227,7 +227,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                         labelText: 'Вес (1.0 и выше)',
                         labelStyle: TextStyle(color: Colors.grey),
                         enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.deepPurpleAccent)),
-                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.tealAccent)),
+                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.cyanAccent)),
                       ),
                     ),
                   ],
@@ -254,7 +254,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                       });
                       Navigator.pop(context);
                     },
-                    child: const Text('Сохранить', style: TextStyle(color: Colors.tealAccent)),
+                    child: const Text('Сохранить', style: TextStyle(color: Colors.cyanAccent)),
                   ),
                 ],
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -461,7 +461,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
-                  colors: [Colors.deepPurpleAccent, Colors.tealAccent],
+                  colors: [Colors.deepPurpleAccent, Colors.cyanAccent],
                 ),
               ),
               child: const Icon(Icons.casino, color: Colors.white, size: 28),
@@ -487,7 +487,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                         ? '✨ Добавь элементы ✨'
                         : '🎯 ${_items.length} ${_items.length == 1 ? 'вариант' : 'вариантов'} 🎯',
                       style: TextStyle(
-                        color: Colors.tealAccent.withOpacity(0.7 + 0.3 * sin(_glowController.value * 2 * pi)),
+                        color: Colors.cyanAccent.withOpacity(0.7 + 0.3 * sin(_glowController.value * 2 * pi)),
                         fontSize: size.width * 0.035,
                         fontWeight: FontWeight.w500,
                       ),
@@ -691,7 +691,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.tealAccent.withOpacity(
+                                        color: Colors.cyanAccent.withOpacity(
                                           _isSpinning ? 0.4 * (0.5 + 0.5 * sin(_glowController.value * 2 * pi)) : 0.1,
                                         ),
                                         blurRadius: _isSpinning ? 40 : 20,
@@ -748,7 +748,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                             gradient: LinearGradient(
                               colors: [
                                 Colors.deepPurpleAccent.withOpacity(0.7),
-                                Colors.tealAccent.withOpacity(0.7),
+                                Colors.cyanAccent.withOpacity(0.7),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -827,7 +827,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                                       gradient: LinearGradient(
                                         colors: [
                                           Colors.deepPurpleAccent.withOpacity(0.6),
-                                          Colors.tealAccent.withOpacity(0.6),
+                                          Colors.cyanAccent.withOpacity(0.6),
                                         ],
                                       ),
                                       borderRadius: BorderRadius.circular(16),
@@ -913,7 +913,7 @@ class _MagicCounterSelector extends StatelessWidget {
             Icon(
               Icons.auto_awesome,
               size: size * 0.2,
-              color: Colors.tealAccent.withOpacity(0.3),
+              color: Colors.cyanAccent.withOpacity(0.3),
             ),
             SizedBox(height: size * 0.05),
             Text(
@@ -960,7 +960,7 @@ class _MagicCounterSelector extends StatelessWidget {
                 scale: scale,
                 child: Icon(
                   Icons.star,
-                  color: Colors.tealAccent.withOpacity((opacity).clamp(0.0, 1.0)),
+                  color: Colors.cyanAccent.withOpacity((opacity).clamp(0.0, 1.0)),
                   size: size * 0.05,
                 ),
               ),
@@ -981,10 +981,10 @@ class _MagicCounterSelector extends StatelessWidget {
                 height: size * 0.02,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.tealAccent.withOpacity((opacity).clamp(0.0, 1.0)),
+                  color: Colors.cyanAccent.withOpacity((opacity).clamp(0.0, 1.0)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.tealAccent.withOpacity((opacity * 0.6).clamp(0.0, 1.0)),
+                      color: Colors.cyanAccent.withOpacity((opacity * 0.6).clamp(0.0, 1.0)),
                       blurRadius: size * 0.03,
                     ),
                   ],
@@ -1009,12 +1009,12 @@ class _MagicCounterSelector extends StatelessWidget {
               child: Text(
                 '$digitValue',
                 style: TextStyle(
-                  color: Colors.tealAccent.withOpacity(opacity),
+                  color: Colors.cyanAccent.withOpacity(opacity),
                   fontSize: size * 0.08,
                   fontWeight: FontWeight.bold,
                   shadows: [
                     Shadow(
-                      color: Colors.tealAccent.withOpacity((opacity * 0.6).clamp(0.0, 1.0)),
+                      color: Colors.cyanAccent.withOpacity((opacity * 0.6).clamp(0.0, 1.0)),
                       blurRadius: size * 0.05,
                     ),
                   ],
@@ -1029,12 +1029,12 @@ class _MagicCounterSelector extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: Colors.tealAccent.withOpacity((0.6 + 0.4 * sin(animationValue * 2 * pi)).clamp(0.0, 1.0)),
+                color: Colors.cyanAccent.withOpacity((0.6 + 0.4 * sin(animationValue * 2 * pi)).clamp(0.0, 1.0)),
                 width: 2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.tealAccent.withOpacity((0.4 + 0.3 * sin(animationValue * 2 * pi)).clamp(0.0, 1.0)),
+                  color: Colors.cyanAccent.withOpacity((0.4 + 0.3 * sin(animationValue * 2 * pi)).clamp(0.0, 1.0)),
                   blurRadius: size * 0.15,
                   spreadRadius: size * 0.05,
                 ),
@@ -1053,7 +1053,7 @@ class _MagicCounterSelector extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Colors.tealAccent.withOpacity((ringOpacity).clamp(0.0, 1.0)),
+                        color: Colors.cyanAccent.withOpacity((ringOpacity).clamp(0.0, 1.0)),
                         width: 1,
                       ),
                     ),
@@ -1081,12 +1081,12 @@ class _MagicCounterSelector extends StatelessWidget {
                     Text(
                       '${items.isEmpty ? 0 : ((animationValue * 3000).toInt() % items.length) + 1}',
                       style: TextStyle(
-                        color: Colors.tealAccent,
+                        color: Colors.cyanAccent,
                         fontSize: size * 0.15,
                         fontWeight: FontWeight.bold,
                         shadows: [
                           Shadow(
-                            color: Colors.tealAccent.withOpacity(0.5),
+                            color: Colors.cyanAccent.withOpacity(0.5),
                             blurRadius: size * 0.08,
                           ),
                         ],
@@ -1190,7 +1190,7 @@ class _AnimatedSlowDot extends StatelessWidget {
       baseSize = 31 * scale + ((index * 7) % 16).toDouble();
     }
 
-    double t = 0.5;
+    double t = 0.1;
 
     double minOpacity = 0.12,
         maxOpacity = 0.39;
