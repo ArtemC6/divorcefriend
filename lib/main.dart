@@ -348,7 +348,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
 
   Widget _buildAnimatedListItem(Item item, int index, Animation<double> animation) {
     return Padding(
-      padding: EdgeInsets.only(top: MediaQuery.of(context).size.width * 0.02, bottom: MediaQuery.of(context).size.width * 0.02),
+      padding: EdgeInsets.only( bottom: MediaQuery.of(context).size.width * 0.02),
       child: FadeTransition(
         opacity: animation,
         child: SlideTransition(
@@ -443,7 +443,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
-    final wheelSize = size.width * 0.8;
+    final wheelSize = size.width * 0.84;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -477,6 +477,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
               child: Padding(
                 padding: EdgeInsets.only(top: 74, left: 18, right: 18, bottom: 12),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(
                       children: [
@@ -844,7 +845,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                     ),
                     if (_history.isNotEmpty)
                       Padding(
-                        padding: EdgeInsets.symmetric(vertical: size.height * 0.015),
+                        padding: EdgeInsets.only(top: size.height * 0.01),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
