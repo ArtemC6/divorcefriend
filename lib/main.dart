@@ -1097,32 +1097,7 @@ class _MagicCounterSelector extends StatelessWidget {
               ],
             ),
           ),
-          // Верхний индикатор
-          Positioned(
-            top: size * 0.05,
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: size * 0.05,
-                vertical: size * 0.02,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.deepPurpleAccent.withOpacity(0.4),
-                borderRadius: BorderRadius.circular(size * 0.03),
-                border: Border.all(
-                  color: Colors.tealAccent.withOpacity(0.5),
-                  width: 1,
-                ),
-              ),
-              child: Text(
-                'Счетчик',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: size * 0.04,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
+
         ],
       ),
     );
