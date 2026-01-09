@@ -471,11 +471,12 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
             ),
           ),
           // Main content
-          SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Padding(
-              padding: EdgeInsets.only(top: 74, left: 18, right: 18, bottom: 12),
-              child: Column(
+          Positioned.fill(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Padding(
+                padding: EdgeInsets.only(top: 74, left: 18, right: 18, bottom: 12),
+                child: Column(
                   children: [
                     Row(
                       children: [
@@ -936,6 +937,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                   ],
                 ),
               ),
+            ),
             ),
         ],
       ),
