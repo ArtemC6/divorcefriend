@@ -452,55 +452,6 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [Colors.deepPurpleAccent, Colors.cyanAccent],
-                ),
-              ),
-              child: const Icon(Icons.casino, color: Colors.white, size: 28),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Разведи друга',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: size.width * 0.06,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                AnimatedBuilder(
-                  animation: _glowController,
-                  builder: (context, child) {
-                    return Text(
-                      _items.isEmpty
-                        ? '✨ Добавь элементы ✨'
-                        : '🎯 ${_items.length} ${_items.length == 1 ? 'вариант' : 'вариантов'} 🎯',
-                      style: TextStyle(
-                        color: Colors.cyanAccent.withOpacity(0.7 + 0.3 * sin(_glowController.value * 2 * pi)),
-                        fontSize: size.width * 0.035,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
       body: Stack(
         children: [
           // Background with black color
@@ -676,7 +627,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                     ),
                     SizedBox(height: size.height * 0.035),
                     SizedBox(
-                      height: wheelSize * 1.2,
+                      height: wheelSize * 1.25,
                       child: Center(
                         child: Stack(
                           alignment: Alignment.center,
@@ -685,13 +636,13 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                               animation: _glowController,
                               builder: (context, child) {
                                 return Container(
-                                  width: _isSpinning ? wheelSize * 1.2 : wheelSize * 1.05,
-                                  height: _isSpinning ? wheelSize * 1.2 : wheelSize * 1.05,
+                                  width: _isSpinning ? wheelSize * 1.23 : wheelSize * 1.06,
+                                  height: _isSpinning ? wheelSize * 1.23 : wheelSize * 1.06,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.cyanAccent.withOpacity(
+                                        color: Colors.indigo.withOpacity(
                                           _isSpinning ? 0.4 * (0.5 + 0.5 * sin(_glowController.value * 2 * pi)) : 0.1,
                                         ),
                                         blurRadius: _isSpinning ? 40 : 20,
@@ -747,8 +698,8 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                Colors.deepPurpleAccent.withOpacity(0.7),
-                                Colors.cyanAccent.withOpacity(0.7),
+                                Colors.deepPurpleAccent.withOpacity(0.6),
+                                Colors.cyanAccent.withOpacity(0.6),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
