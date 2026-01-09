@@ -269,13 +269,8 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
 
   void _deleteItem(int index) {
     setState(() {
-      final removed = _items.removeAt(index);
+      _items.removeAt(index);
       _saveItems();
-      _listKey.currentState?.removeItem(
-        index,
-            (context, animation) => _buildAnimatedListItem(removed, index, animation),
-        duration: const Duration(milliseconds: 500),
-      );
       if (_selectedItem.isNotEmpty && _items.isEmpty) {
         _selectedItem = '';
       }
@@ -361,7 +356,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
             CurvedAnimation(parent: animation, curve: Curves.easeOut),
           ),
           child: Dismissible(
-            key: ValueKey(index),
+            key: ValueKey(item.text + item.weight.toString()),
             background: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
@@ -931,6 +926,9 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                         key: _listKey,
                         initialItemCount: _items.length,
                         itemBuilder: (context, index, animation) {
+                          if (index >= _items.length) {
+                            return const SizedBox.shrink();
+                          }
                           return _buildAnimatedListItem(_items[index], index, animation);
                         },
                       ),
