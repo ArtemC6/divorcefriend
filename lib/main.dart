@@ -353,7 +353,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
 
   Widget _buildAnimatedListItem(Item item, int index, Animation<double> animation) {
     return Padding(
-      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
+      padding: EdgeInsets.only(top: MediaQuery.of(context).size.width * 0.02, bottom: MediaQuery.of(context).size.width * 0.02),
       child: FadeTransition(
         opacity: animation,
         child: SlideTransition(
@@ -382,14 +382,14 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                  filter: ImageFilter.blur(sigmaX: 6.0, sigmaY: 6.0),
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                       gradient: LinearGradient(
                         colors: [
-                          Colors.white.withOpacity(0.15),
-                          Colors.white.withOpacity(0.05),
+                          Colors.white.withOpacity(0.01),
+                          Colors.white.withOpacity(0.01),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -476,13 +476,11 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
             ),
           ),
           // Main content
-          SafeArea(
-            bottom: !isKeyboardVisible,
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Padding(
-                padding: EdgeInsets.all(size.width * 0.04),
-                child: Column(
+          SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Padding(
+              padding: EdgeInsets.only(top: 74, left: 18, right: 18, bottom: 12),
+              child: Column(
                   children: [
                     Row(
                       children: [
@@ -627,7 +625,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                     ),
                     SizedBox(height: size.height * 0.035),
                     SizedBox(
-                      height: wheelSize * 1.25,
+                      height: wheelSize * 1.3,
                       child: Center(
                         child: Stack(
                           alignment: Alignment.center,
@@ -675,26 +673,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                                         ),
                                       ),
                                     ),
-                                    // Радиальные лучи
-                                    ...List.generate(12, (rayIndex) {
-                                      final angle = (rayIndex / 12) * 2 * pi;
-                                      final rayLength = wheelSize * (0.8 + 0.2 * sin(animValue * 3 * pi + rayIndex));
-                                      final dx = cos(angle) * rayLength;
-                                      final dy = sin(angle) * rayLength;
-                                      final opacity = 0.2 + 0.2 * sin(animValue * 4 * pi + rayIndex);
 
-                                      return Transform.translate(
-                                        offset: Offset(dx, dy),
-                                        child: Container(
-                                          width: wheelSize * 0.015,
-                                          height: wheelSize * 0.08,
-                                          decoration: BoxDecoration(
-                                            color: Colors.cyanAccent.withOpacity(opacity.clamp(0.0, 1.0)),
-                                            borderRadius: BorderRadius.circular(wheelSize * 0.01),
-                                          ),
-                                        ),
-                                      );
-                                    }),
                                     // Внешние пульсирующие кольца
                                     ...List.generate(3, (ringIndex) {
                                       final ringSize = wheelSize * (1.3 + ringIndex * 0.15);
@@ -807,7 +786,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                       ),
                     ),
                     AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 800),
+                      duration: const Duration(milliseconds: 300),
                       transitionBuilder: (Widget child, Animation<double> animation) {
                         return FadeTransition(
                           opacity: animation,
@@ -826,7 +805,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                         padding: EdgeInsets.symmetric(vertical: size.height * 0.02),
                         child: Container(
                           padding: EdgeInsets.symmetric(
-                            horizontal: size.width * 0.07,
+                            horizontal: size.width * 0.12,
                             vertical: size.height * 0.018,
                           ),
                           decoration: BoxDecoration(
@@ -959,7 +938,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                   ],
                 ),
               ),
-            ),)
+            ),
         ],
       ),
     );
