@@ -125,7 +125,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
       ),
     )..addListener(() {
       setState(() {
-        _rotationAngle = _spinAnimation.value * 2 * pi * (_random.nextInt(5) + 5);
+        // Animation listener for particle effects
       });
     });
 
@@ -160,7 +160,7 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
     final box = Hive.box<Item>('wheel_items');
     await box.clear();
     for (int i = 0; i < _items.length; i++) {
-      await box.putAt(i, _items[i]);
+      await box.put(i, _items[i]);
     }
   }
 
@@ -316,11 +316,8 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
       }
     }
 
-    // Adjust final rotation to point to selected item
-    final sweepAngle = 2 * pi / _items.length;
-    final targetAngle = (selectedIndex * sweepAngle - pi / 2) % (2 * pi);
+    // Select the random item
     setState(() {
-      _rotationAngle = (_rotationAngle ~/ (2 * pi)) * 2 * pi + targetAngle;
       _selectedItem = _items[selectedIndex].text;
       _showResult = true;
       _history.insert(0, _selectedItem);
@@ -470,13 +467,34 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
               child: const Icon(Icons.casino, color: Colors.white, size: 28),
             ),
             const SizedBox(width: 12),
-            Text(
-              'Разведи друга',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: size.width * 0.06,
-                fontWeight: FontWeight.bold,
-              ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Разведи друга',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: size.width * 0.06,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                AnimatedBuilder(
+                  animation: _glowController,
+                  builder: (context, child) {
+                    return Text(
+                      _items.isEmpty
+                        ? '✨ Добавь элементы ✨'
+                        : '🎯 ${_items.length} ${_items.length == 1 ? 'вариант' : 'вариантов'} 🎯',
+                      style: TextStyle(
+                        color: Colors.tealAccent.withOpacity(0.7 + 0.3 * sin(_glowController.value * 2 * pi)),
+                        fontSize: size.width * 0.035,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           ],
         ),
@@ -660,104 +678,46 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                     SizedBox(
                       height: wheelSize * 1.2,
                       child: Center(
-                        child: GestureDetector(
-                          onTap: _spinWheel,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              AnimatedBuilder(
-                                animation: _glowController,
-                                builder: (context, child) {
-                                  return Container(
-                                    width: _isSpinning ? wheelSize * 1.2 : wheelSize * 1.05,
-                                    height: _isSpinning ? wheelSize * 1.2 : wheelSize * 1.05,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.tealAccent.withOpacity(
-                                            _isSpinning ? 0.4 * (0.5 + 0.5 * sin(_glowController.value * 2 * pi)) : 0.1,
-                                          ),
-                                          blurRadius: _isSpinning ? 40 : 20,
-                                          spreadRadius: _isSpinning ? 15 : 5,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            AnimatedBuilder(
+                              animation: _glowController,
+                              builder: (context, child) {
+                                return Container(
+                                  width: _isSpinning ? wheelSize * 1.2 : wheelSize * 1.05,
+                                  height: _isSpinning ? wheelSize * 1.2 : wheelSize * 1.05,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.tealAccent.withOpacity(
+                                          _isSpinning ? 0.4 * (0.5 + 0.5 * sin(_glowController.value * 2 * pi)) : 0.1,
                                         ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 600),
-                                curve: Curves.easeInOut,
-                                width: _isSpinning ? wheelSize * 1.1 : wheelSize,
-                                height: _isSpinning ? wheelSize * 1.1 : wheelSize,
-                                child: Transform.rotate(
-                                  angle: _rotationAngle,
-                                  child: CustomPaint(
-                                    painter: WheelPainter(items: _items),
-                                    size: Size(wheelSize, wheelSize),
-                                  ),
-                                ),
-                              ),
-                              if(!_selectedItem.isNotEmpty)
-
-                                AnimatedBuilder(
-                                  animation: _animationController,
-                                  builder: (context, child) {
-                                    return Transform.translate(
-                                      offset: Offset(0, -wheelSize * 0.5),
-                                      child: Container(
-                                        width: wheelSize * 0.25,
-                                        height: wheelSize * 0.25,
-                                        decoration: BoxDecoration(
-                                          color: Colors.transparent,
-                                          shape: BoxShape.circle,
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.deepPurple.withOpacity(0.2),
-                                              blurRadius: 20,
-                                              spreadRadius: 0.8,
-                                            ),
-                                          ],
-                                        ),
-                                        child: Icon(
-                                          Icons.arrow_drop_down,
-                                          size: wheelSize * 0.25,
-                                          color: _isSpinning ? Colors.amberAccent : Colors.deepPurpleAccent,
-                                        ),
+                                        blurRadius: _isSpinning ? 40 : 20,
+                                        spreadRadius: _isSpinning ? 15 : 5,
                                       ),
-                                    );
-                                  },
-                                ),
-                              ClipOval(
-                                child: BackdropFilter(
-                                  filter: ImageFilter.blur(sigmaX: 4.0, sigmaY: 4.0),
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 400),
-                                    width: _isSpinning ? wheelSize * 0.22 : wheelSize * 0.2,
-                                    height: _isSpinning ? wheelSize * 0.22 : wheelSize * 0.2,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF1E1E1E).withOpacity(0.7),
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.tealAccent.withOpacity(0.5),
-                                          blurRadius: 16,
-                                          spreadRadius: 2,
-                                        ),
-                                      ],
-                                      border: Border.all(color: Colors.white, width: 2),
-                                    ),
-                                    child: Icon(
-                                      Icons.casino,
-                                      size: wheelSize * 0.1,
-                                      color: Colors.deepPurpleAccent,
-                                    ),
+                                    ],
                                   ),
-                                ),
-                              ),
-                            ],
-                          ),
+                                );
+                              },
+                            ),
+                            AnimatedBuilder(
+                              animation: _animationController,
+                              builder: (context, child) {
+                                return SizedBox(
+                                  width: wheelSize,
+                                  height: wheelSize,
+                                  child: _MagicCounterSelector(
+                                    items: _items,
+                                    animationValue: _animationController.value,
+                                    size: wheelSize,
+                                    onTap: _spinWheel,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -921,119 +881,251 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
   }
 }
 
-class WheelPainter extends CustomPainter {
-  final List<Item> items;
-
-  WheelPainter({required this.items});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-    final paint = Paint()..style = PaintingStyle.fill;
-    final totalWeight = items.fold(0.0, (sum, item) => sum + max(1.0, item.weight));
-
-    if (items.isEmpty) {
-      paint.color = const Color(0xFF2D2D2D).withOpacity(0.5);
-      canvas.drawCircle(center, radius, paint);
-      return;
-    }
-
-    double startAngle = -pi / 2;
-    for (int i = 0; i < items.length; i++) {
-      final sweepAngle = (2 * pi * max(1.0, items[i].weight)) / totalWeight;
-      paint.color = _getColorForIndex(i).withOpacity(0.5);
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sweepAngle,
-        true,
-        paint,
-      );
-
-      final linePaint = Paint()
-        ..color = Colors.white.withOpacity(0.12)
-        ..strokeWidth = 2
-        ..style = PaintingStyle.stroke;
-      canvas.drawLine(
-        center,
-        Offset(
-          center.dx + radius * cos(startAngle),
-          center.dy + radius * sin(startAngle),
-        ),
-        linePaint,
-      );
-
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: items[i].text,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: max(12, size.width * 0.05),
-            fontWeight: FontWeight.bold,
-            shadows: const [Shadow(color: Colors.black54, blurRadius: 4)],
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-
-      final textAngle = startAngle + sweepAngle / 2;
-      final textRadius = radius * 0.6;
-      final textX = center.dx + textRadius * cos(textAngle);
-      final textY = center.dy + textRadius * sin(textAngle);
-
-      canvas.save();
-      canvas.translate(textX, textY);
-      canvas.rotate(textAngle + pi / 2);
-      textPainter.paint(
-        canvas,
-        Offset(-textPainter.width / 2, -textPainter.height / 2),
-      );
-      canvas.restore();
-
-      startAngle += sweepAngle;
-    }
-
-    paint.color = const Color(0xFF1E1E1E).withOpacity(0.5);
-    canvas.drawCircle(center, radius * 0.1, paint);
-
-    final borderPaint = Paint()
-      ..color = Colors.tealAccent.withOpacity(0.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4;
-    canvas.drawCircle(center, radius, borderPaint);
-
-    final glowPaint = Paint()
-      ..color = Colors.tealAccent.withOpacity(0.09)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 16;
-    canvas.drawCircle(center, radius - 4, glowPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-
-  Color _getColorForIndex(int index) {
-    final colors = [
-      const Color(0xFF6D28D9), // Фиолет глубокий
-      const Color(0xFF0891B2), // Голубой яркий
-      const Color(0xFFD946EF), // Розовый магента
-      const Color(0xFFF59E0B), // Оранжевый золотой
-      const Color(0xFF3B82F6), // Синий яркий
-      const Color(0xFF8B5CF6), // Фиолет светлый
-      const Color(0xFF14B8A6), // Бирюзовый
-      const Color(0xFFF97316), // Оранжевый яркий
-    ];
-    return colors[index % colors.length].withOpacity(0.9);
-  }
-}
-
 class _DecelerationCurve extends Curve {
   const _DecelerationCurve();
 
   @override
   double transformInternal(double t) {
     return 1 - pow(1 - t, 4).toDouble();
+  }
+}
+
+class _MagicCounterSelector extends StatelessWidget {
+  final List<Item> items;
+  final double animationValue;
+  final double size;
+  final VoidCallback onTap;
+
+  const _MagicCounterSelector({
+    required this.items,
+    required this.animationValue,
+    required this.size,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.auto_awesome,
+              size: size * 0.2,
+              color: Colors.tealAccent.withOpacity(0.3),
+            ),
+            SizedBox(height: size * 0.05),
+            Text(
+              '✨ Добавь элементы ✨',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.5),
+                fontSize: size * 0.08,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Внешнее пульсирующее кольцо
+          Container(
+            width: size * 0.9,
+            height: size * 0.9,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.deepPurpleAccent.withOpacity((0.2 + 0.2 * sin(animationValue * 3 * pi)).clamp(0.0, 1.0)),
+                width: 1,
+              ),
+            ),
+          ),
+          // Парящие звезды вокруг счетчика
+          ...List.generate(8, (i) {
+            final angle = (i / 8) * 2 * pi + animationValue * 2 * pi;
+            final radius = size * 0.45 + sin(animationValue * 2 * pi + i) * size * 0.05;
+            final dx = cos(angle) * radius;
+            final dy = sin(angle) * radius;
+            final opacity = 0.3 + 0.4 * sin(animationValue * 4 * pi + i);
+            final scale = 0.6 + 0.4 * sin(animationValue * 3 * pi + i * 0.5);
+
+            return Transform.translate(
+              offset: Offset(dx, dy),
+              child: Transform.scale(
+                scale: scale,
+                child: Icon(
+                  Icons.star,
+                  color: Colors.tealAccent.withOpacity((opacity).clamp(0.0, 1.0)),
+                  size: size * 0.05,
+                ),
+              ),
+            );
+          }),
+          // Волнующиеся радиальные линии
+          ...List.generate(6, (i) {
+            final angle = (i / 6) * 2 * pi;
+            final length = size * 0.35 + sin(animationValue * 4 * pi + i) * size * 0.05;
+            final dx = cos(angle) * length;
+            final dy = sin(angle) * length;
+            final opacity = 0.2 + 0.3 * sin(animationValue * 5 * pi + i);
+
+            return Transform.translate(
+              offset: Offset(dx, dy),
+              child: Container(
+                width: size * 0.02,
+                height: size * 0.02,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.tealAccent.withOpacity((opacity).clamp(0.0, 1.0)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.tealAccent.withOpacity((opacity * 0.6).clamp(0.0, 1.0)),
+                      blurRadius: size * 0.03,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          // Фоновые мигающие цифры (матричный эффект)
+          ...List.generate(12, (i) {
+            final angle = (i / 12) * 2 * pi;
+            final radius = size * 0.35;
+            final dx = cos(angle) * radius;
+            final dy = sin(angle) * radius;
+
+            final itemCount = items.isEmpty ? 1 : items.length;
+            final digitValue = ((animationValue * 3000 + i * 100).toInt() % itemCount) + 1;
+            final rawOpacity = 0.3 + 0.4 * sin(animationValue * 8 * pi + i);
+            final opacity = (rawOpacity).clamp(0.0, 1.0);
+
+            return Transform.translate(
+              offset: Offset(dx, dy),
+              child: Text(
+                '$digitValue',
+                style: TextStyle(
+                  color: Colors.tealAccent.withOpacity(opacity),
+                  fontSize: size * 0.08,
+                  fontWeight: FontWeight.bold,
+                  shadows: [
+                    Shadow(
+                      color: Colors.tealAccent.withOpacity((opacity * 0.6).clamp(0.0, 1.0)),
+                      blurRadius: size * 0.05,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          // Центральный счетчик
+          Container(
+            width: size * 0.4,
+            height: size * 0.4,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.tealAccent.withOpacity((0.6 + 0.4 * sin(animationValue * 2 * pi)).clamp(0.0, 1.0)),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.tealAccent.withOpacity((0.4 + 0.3 * sin(animationValue * 2 * pi)).clamp(0.0, 1.0)),
+                  blurRadius: size * 0.15,
+                  spreadRadius: size * 0.05,
+                ),
+              ],
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Пульсирующие кольца
+                ...List.generate(3, (ringIndex) {
+                  final ringRadius = size * 0.15 + (ringIndex * size * 0.08);
+                  final ringOpacity = 0.15 + 0.15 * sin(animationValue * 3 * pi + ringIndex);
+                  return Container(
+                    width: ringRadius,
+                    height: ringRadius,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.tealAccent.withOpacity((ringOpacity).clamp(0.0, 1.0)),
+                        width: 1,
+                      ),
+                    ),
+                  );
+                }),
+                // Вращающиеся линии сетки
+                Transform.rotate(
+                  angle: animationValue * pi,
+                  child: Container(
+                    width: size * 0.35,
+                    height: size * 0.35,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.deepPurpleAccent.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                ),
+                // Центральное число (счетчик)
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${items.isEmpty ? 0 : ((animationValue * 3000).toInt() % items.length) + 1}',
+                      style: TextStyle(
+                        color: Colors.tealAccent,
+                        fontSize: size * 0.15,
+                        fontWeight: FontWeight.bold,
+                        shadows: [
+                          Shadow(
+                            color: Colors.tealAccent.withOpacity(0.5),
+                            blurRadius: size * 0.08,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // Верхний индикатор
+          Positioned(
+            top: size * 0.05,
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: size * 0.05,
+                vertical: size * 0.02,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.deepPurpleAccent.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(size * 0.03),
+                border: Border.all(
+                  color: Colors.tealAccent.withOpacity(0.5),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                'Счетчик',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: size * 0.04,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
