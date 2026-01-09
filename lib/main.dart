@@ -736,8 +736,8 @@ class _RandomizerScreenState extends State<RandomizerScreen> with TickerProvider
                                       );
                                     }),
                                     // Случайные мигающие цифры вокруг счётчика
-                                    ...List.generate(16, (i) {
-                                      final angle = (i / 16) * 2 * pi + animValue * 1.5 * pi;
+                                    ...List.generate(24, (i) {
+                                      final angle = (i / 24) * 2 * pi + animValue * 1.5 * pi;
                                       final radius = wheelSize * (0.4 + 0.3 * sin(animValue * 2 * pi + i * 0.5));
                                       final dx = cos(angle) * radius;
                                       final dy = sin(angle) * radius;
@@ -1058,9 +1058,9 @@ class _MagicCounterSelector extends StatelessWidget {
             );
           }),
           // Фоновые мигающие цифры (матричный эффект)
-          ...List.generate(12, (i) {
-            final angle = (i / 12) * 2 * pi;
-            final radius = size * 0.35;
+          ...List.generate(18, (i) {
+            final angle = (i / 18) * 2 * pi;
+            final radius = size * 0.36;
             final dx = cos(angle) * radius;
             final dy = sin(angle) * radius;
 
